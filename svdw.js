@@ -93,17 +93,30 @@
     });
     return tsReady;
   }
+  // Turnstile wordt vooraf (bij laden) klaargezet, zodat stemmen direct gaat
+  var tsState = { token: null, wachtenden: [], widget: null, holder: null };
+  function tsKlaarzetten(holder) {
+    if (!TURNSTILE_SITEKEY || tsState.widget !== null) return;
+    tsState.holder = holder; tsState.widget = 'bezig';
+    loadTurnstile().then(function (ts) {
+      holder.innerHTML = '';
+      var el = document.createElement('div'); holder.appendChild(el);
+      tsState.widget = ts.render(el, {
+        sitekey: TURNSTILE_SITEKEY, appearance: 'interaction-only', theme: 'dark', language: 'nl',
+        'refresh-expired': 'auto',
+        callback: function (t) { tsState.token = t; var w = tsState.wachtenden; tsState.wachtenden = []; w.forEach(function (f) { f.res(t); }); },
+        'expired-callback': function () { tsState.token = null; },
+        'error-callback': function () { var w = tsState.wachtenden; tsState.wachtenden = []; w.forEach(function (f) { f.rej(new Error('ts')); }); }
+      });
+    });
+  }
   function getToken(holder) {
     if (!TURNSTILE_SITEKEY) return Promise.resolve('');
-    return loadTurnstile().then(function (ts) {
-      return new Promise(function (res, rej) {
-        holder.innerHTML = '';
-        var el = document.createElement('div'); holder.appendChild(el);
-        ts.render(el, {
-          sitekey: TURNSTILE_SITEKEY, appearance: 'interaction-only', theme: 'dark', language: 'nl',
-          callback: function (t) { res(t); }, 'error-callback': function () { rej(new Error('ts')); }
-        });
-      });
+    tsKlaarzetten(holder);
+    if (tsState.token) { var t = tsState.token; tsState.token = null; return Promise.resolve(t); }
+    return new Promise(function (res, rej) {
+      tsState.wachtenden.push({ res: function (t) { tsState.token = null; res(t); }, rej: rej });
+      setTimeout(function () { rej(new Error('timeout')); }, 30000);
     });
   }
 
@@ -156,7 +169,9 @@
       getToken(tsHolder).then(function (token) {
         return postJSON({ ronde: st.data.ronde.ronde, foto_id: id, apparaat: apparaat(), token: token });
       }).then(function (res) {
-        st.bezig = false; tsHolder.innerHTML = '';
+        st.bezig = false;
+        if (res.ok || res.fout === 'al_gestemd') tsHolder.innerHTML = '';
+        else if (window.turnstile && typeof tsState.widget === 'string' && tsState.widget !== 'bezig') { try { turnstile.reset(tsState.widget); } catch (e) {} }
         if (res.ok || res.fout === 'al_gestemd') {
           st.gestemd = res.ok ? id : (st.gestemd || 'onbekend');
           ls('svdw_stem_' + st.data.ronde.ronde, st.gestemd);
@@ -172,6 +187,7 @@
         st.data = d;
         if (d.ronde) st.gestemd = ls('svdw_stem_' + d.ronde.ronde) || null;
         render();
+        if (d.ronde && !st.gestemd) tsKlaarzetten(tsHolder);
       }).catch(function () { if (!st.data) wrap.innerHTML = '<div class="msg">Shot van de Week kon niet geladen worden.</div>'; });
     }
     render(); laad();
