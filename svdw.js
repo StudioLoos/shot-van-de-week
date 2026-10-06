@@ -12,7 +12,7 @@
 
   // ---------------- instellingen ----------------
   var API = 'https://script.google.com/macros/s/AKfycbzG2daH_46YeFEmePyuqTyXGcax8zFrBi5XA5hhUDE5OIRYIGJLkG6NI1bWjsh4kEOe/exec';
-  var TURNSTILE_SITEKEY = ''; // invullen na stap 3 (Cloudflare Turnstile)
+  var TURNSTILE_SITEKEY = '0x4AAAAAAFPV9G4q5tcrDryH'; // invullen na stap 3 (Cloudflare Turnstile)
   var POLL_MS = 30000;        // tussenstand verversen
 
   // ---------------- stijl ----------------
