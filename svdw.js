@@ -191,7 +191,7 @@
       w.forEach(function (x) {
         h += '<article>' +
           '<img class="wimg" loading="lazy" src="' + esc(x.afbeelding_url) + '" alt="Winnaar speelronde ' + esc(x.ronde) + ' – ' + esc(x.titel) + '">' +
-          '<div class="wmeta"><span class="pill">Speelronde ' + esc(x.ronde) + '</span><span class="wv">' + esc(x.stemmen) + ' stemmen</span></div>' +
+          '<div class="wmeta"><span class="pill">Speelronde ' + esc(x.ronde) + '</span>' + (x.stemmen !== '' && x.stemmen != null ? '<span class="wv">' + esc(x.stemmen) + ' stemmen</span>' : '') + '</div>' +
           '<h3 class="wt">' + esc(x.titel) + '</h3><p class="by" style="margin:0">' + esc(x.wedstrijd) + ' · foto ' + esc(x.fotograaf) + '</p>' +
           (x.tekst ? '<p class="wtx">' + esc(x.tekst) + '</p>' : '') +
           '</article>';
